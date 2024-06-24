@@ -1,0 +1,16 @@
+'~.*:max' 'class' STORE
+{ 'host_id' '~.*' 'service_id' '~.*' 'platform_uuid' '~.*' } 'labels' STORE
+
+[ $read_token $class $labels ] FIND
+<%
+    DUP
+    NAME 'metric' STORE
+    LABELS 'labels' STORE
+    {
+        'metric' $metric ':max$' '' REPLACE
+        'host_id' $labels 'host_id' GET
+        'service_id' $labels 'service_id' GET
+        'platform_uuid' $labels 'platform_uuid' GET
+    }
+%> F LMAP
+UNIQUE
