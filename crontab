@@ -1,0 +1,2 @@
+# Run the script every 2 minutes
+0 2 * * * /train_models.sh
