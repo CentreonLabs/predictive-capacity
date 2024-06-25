@@ -1,0 +1,127 @@
+version: "3.9"
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:${DDB_VERSION:-latest}
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data -disableTelemetry"
+    user: root
+    volumes:
+      - dynamodb_data:/home/dynamodblocal/data
+    working_dir: /home/dynamodblocal
+    networks:
+      - predictive_capacity_network
+
+  minio:
+    image: minio/minio:${MINIO_VERSION:-latest}
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-monpassword}
+    volumes:
+        - minio:/data/minio
+    command: 'minio server /data/minio --console-address ":9001"'
+    networks:
+      - predictive_capacity_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 120s
+      timeout: 10s
+      retries: 10
+
+  warp10:
+    image: warp10io/warp10:${WARP10_VERSION:-3.3.0-ubuntu-ci}
+    volumes:
+      - warp10_data:/data
+    networks:
+      - predictive_capacity_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.warp10.rule=PathPrefix(`${WARP10_PREFIX:-/observability}`)"
+      - "traefik.http.routers.warp10.entrypoints=web"
+      - "traefik.http.routers.warp10.middlewares=warp10,warp10addprefix"
+      - "traefik.http.middlewares.warp10.stripprefix.prefixes=${WARP10_PREFIX:-/observability}"
+      - "traefik.http.middlewares.warp10addprefix.addprefix.prefix=/api/v0/update"
+      - "traefik.http.services.warp10.loadbalancer.server.port=8080"
+
+  proxy:
+    image: traefik:${TRAEFIK_VERSION:-latest}
+    networks:
+      - predictive_capacity_network
+    ports:
+      - 80:80
+      # - 443:443
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.yml:/etc/traefik/traefik.yaml:ro
+
+
+  backend:
+    image: backend-ml-aiops
+    build: ./backend
+    networks:
+      - predictive_capacity_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`${API_PREFIX:-/api}`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.middlewares=backend"
+      - "traefik.http.middlewares.backend.stripprefix.prefixes=${API_PREFIX:-/api}"
+      - "traefik.http.services.backend.loadbalancer.server.port=7000"
+    environment:
+      CURRENT_ENVIRONMENT: ${CURRENT_ENVIRONMENT:-production}
+      # control training timeout in seconds
+      ML_TRAINING_TIMEOUT: ${ML_TRAINING_TIMEOUT:-300}
+      ML_RESULTS_TABLE: ${ML_RESULTS_TABLE:-PredictiveCapacityResults}
+      ML_RESULTS_BUCKET: ${ML_RESULTS_BUCKET:-eu-west-1-ml-predictive-capacity-results}
+      AWS_ACCESS_KEY_ID : minio
+      AWS_SECRET_ACCESS_KEY : ${MINIO_ROOT_PASSWORD:-monpassword}
+      ML_WARP10_URL: http://warp10
+      DYNAMODB_URL: http://dynamodb:8000
+      MINIO_URL: http://minio:9000 
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7000/healthcheck || exit 1"]
+      interval: 120s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      minio:
+        condition: service_healthy
+      
+  frontend:
+    image: frontend-ml-aiops
+    build:
+      context: ./frontend
+      args:
+        API_URL: http://${API_DOMAIN:-localhost}${API_PREFIX:-/api}
+    networks:
+      - predictive_capacity_network
+    environment:
+      API_URL: http://${API_DOMAIN:-localhost}${API_PREFIX:-/api}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN:-localhost}`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  cron:
+    image: alpine:latest
+    volumes:
+      - ./train_models.sh:/train_models.sh
+      - ./crontab:/etc/crontabs/root
+    entrypoint: ["/bin/sh", "-c", "apk add --no-cache curl && chmod +x /train_models.sh && crond -f -l 2"]
+    networks:
+      - predictive_capacity_network
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  predictive_capacity_network:
+
+volumes:
+  dynamodb_data:
+  warp10_data:
+  minio:
