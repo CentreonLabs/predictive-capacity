@@ -98,7 +98,7 @@ graph TD
   minio[minio]
   warp10[warp10]
   proxy[proxy]
-  forecast_api[forecast_api]
+  backend[backend]
   frontend[frontend]
   cron[cron]
   
@@ -107,23 +107,23 @@ graph TD
   warp10 -->|data volume| warp10_data[warp10_data]
   
   Centreon --> |stream_connector|proxy
-  proxy -->  forecast_api
+  proxy -->  backend
   proxy -->  frontend
   proxy -->  warp10
 
-  forecast_api --> minio
-  forecast_api --> dynamodb
-  forecast_api --> warp10
+  backend --> minio
+  backend --> dynamodb
+  backend --> warp10
   
-  frontend --> forecast_api
-  cron --> |training jobs| forecast_api
+  frontend --> backend
+  cron --> |training jobs| backend
   
-  subgraph "Network: centreonlab_capacityplanning"
+  subgraph "Network: predictive_capacity_network"
     dynamodb
     minio
     warp10
     proxy
-    forecast_api
+    backend
     frontend
     cron
   end
