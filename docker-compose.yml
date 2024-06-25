@@ -26,7 +26,6 @@ services:
       interval: 120s
       timeout: 10s
       retries: 10
-      # start_period: 10s
 
   warp10:
     image: warp10io/warp10:${WARP10_VERSION:-3.3.0-ubuntu-ci}
@@ -54,7 +53,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik.yml:/etc/traefik/traefik.yaml:ro
-      # SSL definition
+
 
   backend:
     image: backend-ml-aiops
@@ -84,7 +83,6 @@ services:
       interval: 120s
       timeout: 10s
       retries: 10
-      # start_period: 10s
     depends_on:
       minio:
         condition: service_healthy
