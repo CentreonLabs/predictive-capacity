@@ -9,7 +9,7 @@ services:
       - dynamodb_data:/home/dynamodblocal/data
     working_dir: /home/dynamodblocal
     networks:
-      - centreonlab_capacityplanning
+      - predictive_capacity_network
 
   minio:
     image: minio/minio:${MINIO_VERSION:-latest}
@@ -20,7 +20,7 @@ services:
         - minio:/data/minio
     command: 'minio server /data/minio --console-address ":9001"'
     networks:
-      - centreonlab_capacityplanning
+      - predictive_capacity_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 120s
@@ -33,7 +33,7 @@ services:
     volumes:
       - warp10_data:/data
     networks:
-      - centreonlab_capacityplanning
+      - predictive_capacity_network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.warp10.rule=PathPrefix(`${WARP10_PREFIX:-/observability}`)"
@@ -46,7 +46,7 @@ services:
   proxy:
     image: traefik:${TRAEFIK_VERSION:-latest}
     networks:
-      - centreonlab_capacityplanning
+      - predictive_capacity_network
     ports:
       - 80:80
       # - 443:443
@@ -56,18 +56,18 @@ services:
       - ./traefik.yml:/etc/traefik/traefik.yaml:ro
       # SSL definition
 
-  forecast_api:
-    image: forecast-api-ml-aiops
-    build: ./forecast_api_lab
+  backend:
+    image: backend-ml-aiops
+    build: ./backend
     networks:
-      - centreonlab_capacityplanning
+      - predictive_capacity_network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.forecast_api.rule=PathPrefix(`${API_PREFIX:-/api}`)"
-      - "traefik.http.routers.forecast_api.entrypoints=web"
-      - "traefik.http.routers.forecast_api.middlewares=forecast_api"
-      - "traefik.http.middlewares.forecast_api.stripprefix.prefixes=${API_PREFIX:-/api}"
-      - "traefik.http.services.forecast_api.loadbalancer.server.port=7000"
+      - "traefik.http.routers.backend.rule=PathPrefix(`${API_PREFIX:-/api}`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.middlewares=backend"
+      - "traefik.http.middlewares.backend.stripprefix.prefixes=${API_PREFIX:-/api}"
+      - "traefik.http.services.backend.loadbalancer.server.port=7000"
     environment:
       CURRENT_ENVIRONMENT: ${CURRENT_ENVIRONMENT:-production}
       # control training timeout in seconds
@@ -90,13 +90,13 @@ services:
         condition: service_healthy
       
   frontend:
-    image: front-ml-aiops
+    image: frontend-ml-aiops
     build:
-      context: ./front_lab
+      context: ./frontend
       args:
         API_URL: http://${API_DOMAIN:-localhost}${API_PREFIX:-/api}
     networks:
-      - centreonlab_capacityplanning
+      - predictive_capacity_network
     environment:
       API_URL: http://${API_DOMAIN:-localhost}${API_PREFIX:-/api}
     labels:
@@ -105,7 +105,7 @@ services:
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     depends_on:
-      forecast_api:
+      backend:
         condition: service_healthy
 
   cron:
@@ -115,13 +115,13 @@ services:
       - ./crontab:/etc/crontabs/root
     entrypoint: ["/bin/sh", "-c", "apk add --no-cache curl && chmod +x /train_models.sh && crond -f -l 2"]
     networks:
-      - centreonlab_capacityplanning
+      - predictive_capacity_network
     depends_on:
-      forecast_api:
+      backend:
         condition: service_healthy
 
 networks:
-  centreonlab_capacityplanning:
+  predictive_capacity_network:
 
 volumes:
   dynamodb_data:
