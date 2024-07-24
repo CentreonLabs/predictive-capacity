@@ -31,38 +31,13 @@ WARP10_READ_TOKEN = os.environ.get("WARP10_READ_TOKEN", "readTokenCI")
 ML_WARP10_URL = os.environ.get("ML_WARP10_URL", "http://localhost")
 
 # AWS
-AWS_S3_ENDPOINT = os.environ.get("AWS_S3_ENDPOINT")
 ML_RESULTS_TABLE = os.environ.get("ML_RESULTS_TABLE", "PredictiveCapacityResults")
 ML_RESULTS_BUCKET = os.environ.get(
     "ML_RESULTS_BUCKET", "eu-west-1-ml-predictive-capacity-results"
-)  # noqa: E501
-
-# AWS
-AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "testing")
-AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "testing")
-AWS_SECURITY_TOKEN = os.environ.get("AWS_SECURITY_TOKEN", "testing")
-AWS_SESSION_TOKEN = os.environ.get("AWS_SESSION_TOKEN", "testing")
-AWS_DEFAULT_REGION = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
-
-# DynamoDB
-DYNAMODB_URL = os.environ.get("DYNAMODB_URL", "http://localhost:8000")
-MINIO_URL = os.environ.get("MINIO_URL", "http://localhost:9000")
-
-dynamodb: DynamoDBServiceResource = boto3.resource(
-    "dynamodb",
-    endpoint_url=DYNAMODB_URL,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_DEFAULT_REGION,
 )
 
-s3: S3ServiceResource = boto3.resource(
-    "s3",
-    endpoint_url=MINIO_URL,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_DEFAULT_REGION,
-)
+dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
+s3: S3ServiceResource = boto3.resource("s3")
 
 
 def __version__() -> str:
