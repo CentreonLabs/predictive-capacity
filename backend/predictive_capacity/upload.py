@@ -15,8 +15,6 @@
 
 import json
 from decimal import Decimal
-from typing import Optional
-from uuid import uuid4
 
 from loguru import logger
 from mypy_boto3_dynamodb.service_resource import Table

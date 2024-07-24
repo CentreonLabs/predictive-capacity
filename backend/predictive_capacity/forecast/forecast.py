@@ -15,7 +15,6 @@
 
 from typing import List
 
-import boto3
 import tqdm
 from botocore.exceptions import ClientError
 from loguru import logger
@@ -106,7 +105,7 @@ def make_forecasts(
             raise
 
     # Ensure the table exists
-    logger.debug(f"Get list of dynamoDB tables")
+    logger.debug("Get list of dynamoDB tables")
     existing_tables = list_all_tables()
     logger.debug(f"tables: {existing_tables}")
 

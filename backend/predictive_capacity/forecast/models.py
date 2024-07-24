@@ -20,7 +20,7 @@ from typing import Tuple
 import numpy as np
 import optuna
 import pandas as pd
-from aeon.performance_metrics.forecasting import MeanAbsoluteScaledError
+from aeon.performance_metrics.forecasting import mean_absolute_scaled_error
 from lightgbm import LGBMRegressor
 from loguru import logger
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -29,9 +29,6 @@ from sklearn.linear_model import HuberRegressor, Ridge
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import PolynomialFeatures
-from sklearnex import patch_sklearn
-
-patch_sklearn()
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -48,7 +45,7 @@ class MutliGBMTunedDetrended(BaseEstimator, RegressorMixin):
     def fit(self, X, y):
         def objective(trial: optuna.Trial) -> float:
             tscv = TimeSeriesSplit(n_splits=self.n_splits, test_size=int(0.1 * len(X)))
-            error_metric = MeanAbsoluteScaledError()
+            error_metric = mean_absolute_scaled_error()
 
             gbm_type = trial.suggest_categorical("gbm_type", ["lgbm", "gbr", "hgbr"])
 

@@ -14,23 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from enum import Enum
 
 import boto3
-from loguru import logger
-
-
-class Environment(Enum):
-    DEVELOPMENT = "development"
-    TESTING = "testing"
-    STAGING = "staging"
-    PRODUCTION = "production"
-
-
-CURRENT_ENVIRONMENT = os.environ.get("CURRENT_ENVIRONMENT", Environment.DEVELOPMENT)
-
-logger.info(f"Current environment: {CURRENT_ENVIRONMENT}")
-
+from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
+from mypy_boto3_s3.service_resource import S3ServiceResource
 
 # DEFAULTS
 HORIZON_PREDICTION_HOURS = 365 * 24
@@ -61,7 +48,7 @@ AWS_DEFAULT_REGION = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
 DYNAMODB_URL = os.environ.get("DYNAMODB_URL", "http://localhost:8000")
 MINIO_URL = os.environ.get("MINIO_URL", "http://localhost:9000")
 
-dynamodb = boto3.resource(
+dynamodb: DynamoDBServiceResource = boto3.resource(
     "dynamodb",
     endpoint_url=DYNAMODB_URL,
     aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -69,7 +56,7 @@ dynamodb = boto3.resource(
     region_name=AWS_DEFAULT_REGION,
 )
 
-s3 = boto3.resource(
+s3: S3ServiceResource = boto3.resource(
     "s3",
     endpoint_url=MINIO_URL,
     aws_access_key_id=AWS_ACCESS_KEY_ID,
