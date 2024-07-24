@@ -32,22 +32,20 @@ lightgbm = "^4.0.0"
 datetime = "^5.2"
 optuna = "^3.3.0"
 
-[tool.poetry.dev-dependencies]
-pytest = "^7.2.1"
-pytest-env = "^0.8.1"
-pytest-mock = "^3.10.0"
-
 [tool.poetry.group.dev.dependencies]
 python-dotenv = "^1.0.0"
 matplotlib = "^3.7.1"
 ipykernel = "^6.22.0"
 coverage = "^7.2.3"
 coverage-badge = "^1.1.0"
-moto = "^4.1.14"
+moto = "^5.0.11"
 black = "^24.3.0"
 isort = "^5.12.0"
 flake8-cognitive-complexity = "^0.1.0"
 flake8 = "^6.1.0"
+pytest = "^7.2.1"
+pytest-env = "^0.8.1"
+pytest-mock = "^3.10.0"
 
 [tool.isort]
 profile = "black"
