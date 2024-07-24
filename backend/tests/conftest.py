@@ -1,21 +1,28 @@
 from typing import Any, Generator
 from unittest.mock import patch
 
-import pandas as pd
+import boto3
 import pytest
+from moto import mock_dynamodb
+
+from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
 
 from predictive_capacity.schemas import MetricBase
+from predictive_capacity.upload import create_dynamodb_table
 
 
-@pytest.fixture
-def data() -> Generator[pd.DataFrame, Any, Any]:
-    """Load data from AirPassengers.csv
+@pytest.fixture()
+@mock_dynamodb
+def dynamodb() -> DynamoDBServiceResource:
+    return boto3.resource("dynamodb", region_name="us-east-1")
 
-    This fixture is use to test the forecast function.
-    """
-    df = pd.read_csv("tests/forecast/AirPassengers.csv", parse_dates=True, usecols=[1])
-    df.index = pd.date_range(start="2023-04-01", periods=len(df), freq="1d")
-    yield df
+
+@pytest.fixture()
+def dynamodb_table(dynamodb):
+    # Create a mock for dynamodb resource
+    with patch("predictive_capacity.upload.dynamodb") as mock_upload_dynamodb:
+        mock_upload_dynamodb.return_value = dynamodb
+        create_dynamodb_table()
 
 
 @pytest.fixture
