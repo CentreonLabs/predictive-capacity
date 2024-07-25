@@ -1,38 +1,42 @@
 import json
+from decimal import Decimal
 from unittest.mock import patch
 
 import boto3
 import pytest
 from fastapi.testclient import TestClient
-from moto import mock_s3
-
-from predictive_capacity import ML_RESULTS_BUCKET
-from predictive_capacity.api import app
-
-client = TestClient(app)
+from moto import mock_aws
 
 
-def test_healthcheck():
+@pytest.fixture
+@mock_aws
+def client(scope="session") -> TestClient:
+    from predictive_capacity.api import app
+
+    return TestClient(app)
+
+
+def test_healthcheck(client):
     response = client.get("/healthcheck")
     assert response.status_code == 200
     assert response.json() == {"healthcheck": "OK"}
 
 
-DYNAMODB_ITEMS = [
-    {
-        "source#host_id#service_id": "source#1#1",
-        "class": "metric1",
-        "host_name": "host1",
-        "service_name": "service1",
-        "days_to_full": 1,
-        "current_saturation": 1.0,
-        "saturation_3_months": {"current_saturation": 1.0, "forecast": 0.0},
-        "saturation_6_months": {"current_saturation": 1.0, "forecast": 0.0},
-        "saturation_12_months": {"current_saturation": 1.0, "forecast": 0.0},
-        "confidence_level": 0,
-        "uuid": "00000000-0000-0000-0000-000000000000",
-    },
-]
+DYNAMODB_ITEM = {
+    "source": "test",
+    "source#host_id#service_id": "source#1#1",
+    "class": "metric1",
+    "host_name": "host1",
+    "service_name": "service1",
+    "days_to_full": 1,
+    "current_saturation": 1.0,
+    "saturation_3_months": {"current_saturation": 1.0, "forecast": 0.0},
+    "saturation_6_months": {"current_saturation": 1.0, "forecast": 0.0},
+    "saturation_12_months": {"current_saturation": 1.0, "forecast": 0.0},
+    "confidence_level": 0,
+    "uuid": "00000000-0000-0000-0000-000000000000",
+}
+
 
 DASHBOARD_EXPECTED = [
     {
@@ -53,29 +57,22 @@ DASHBOARD_EXPECTED = [
 
 
 @pytest.mark.parametrize(
-    ids=["Returns 200", "Returns 404"],
-    argnames=["status_code", "query", "expected"],
+    ids=["Success", "Missing data"],
+    argnames=["status_code", "items", "expected"],
     argvalues=[
-        (
-            200,
-            {
-                "Count": 1,
-                "Items": DYNAMODB_ITEMS,
-            },
-            DASHBOARD_EXPECTED,
-        ),
-        (404, {"Count": 0, "Items": []}, {"detail": "No dashboard found"}),
+        (200, [DYNAMODB_ITEM], DASHBOARD_EXPECTED),
+        (404, [], {"detail": "No dashboard found"}),
     ],
 )
-@patch("predictive_capacity.api.table.query")
-@patch("predictive_capacity.api.boto3.resource")
-def test_read_dashboard(
-    mock_query,
-    status_code,
-    query,
-    expected,
-):
-    mock_query.return_value = query
+@mock_aws
+def test_read_dashboard(status_code: int, items: dict, expected: dict, client):
+    from predictive_capacity.upload import ML_RESULTS_TABLE, create_dynamodb_table
+
+    create_dynamodb_table(ML_RESULTS_TABLE)
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(ML_RESULTS_TABLE)
+    for item in items:
+        table.put_item(Item=json.loads(json.dumps(item), parse_float=Decimal))
     result = client.get("/metrics")
     assert result.status_code == status_code
     assert result.json() == expected
@@ -97,17 +94,60 @@ S3_OBJECT = {
         (404, "wrong_uuid", {"detail": "No prediction found"}),
     ],
 )
-@mock_s3
-@patch("predictive_capacity.api.boto3.client")
-def test_read_predictions(status_code, uuid, detail):
-    s3 = boto3.client("s3", region_name="us-east-1")
-    s3.create_bucket(Bucket=ML_RESULTS_BUCKET)
+@mock_aws
+def test_read_predictions(status_code: int, uuid: str, detail: dict, client):
+    from predictive_capacity.upload import ML_RESULTS_BUCKET, create_s3_bucket
+
+    create_s3_bucket(ML_RESULTS_BUCKET)
+    s3 = boto3.client("s3")
     s3.put_object(
         Bucket=ML_RESULTS_BUCKET, Key="test_uuid.json", Body=json.dumps(S3_OBJECT)
     )
     result = client.get(f"/predictions/{uuid}")
     assert result.status_code == status_code
     assert result.json() == detail
+
+
+@pytest.fixture
+def dict_metric() -> dict:
+    """Create a fake response to retrieve forecast
+
+    Since we use BaseModel to validate the response, we need to ensure that the
+    response is valid. Unfortunately, we cannot use the MetricBase as a yield"""
+    response = {
+        "metric_name": "test:forecast",
+        "host_name": "host_name",
+        "host_id": "123",
+        "service_id": "123",
+        "service_name": "service_name",
+        "data_scaled": [],
+        "data_dates": [],
+        "forecast": [],
+        "forecast_dates": [],
+        "days_to_full": None,
+        "current_saturation": 0.0,
+        "saturation_3_months": {"current_saturation": 0.0, "forecast": 0.0},
+        "saturation_6_months": {"current_saturation": 0.0, "forecast": 0.0},
+        "saturation_12_months": {"current_saturation": 0.0, "forecast": 0.0},
+        "confidence_level": 0,
+        "uuid": "00000000-0000-0000-0000-000000000000",
+    }
+    return response
+
+
+@pytest.fixture
+def failure(*args, **kwargs):
+    raise Exception("Failure")
+
+
+@pytest.fixture
+def find_set_metrics_empty():
+    yield []
+
+
+@pytest.fixture
+def find_set_metrics(dict_metric):
+    yield [dict_metric]
 
 
 @pytest.mark.parametrize(
@@ -121,6 +161,7 @@ def test_read_predictions(status_code, uuid, detail):
 )
 @patch("predictive_capacity.api.make_forecasts")
 @patch("predictive_capacity.api.find_set_metrics")
+@mock_aws
 def test_forecast(
     mock_find_set_metrics,
     mock_make_forecasts,
@@ -128,6 +169,7 @@ def test_forecast(
     status,
     expected,
     request,
+    client,
 ):
     mock_find_set_metrics.side_effect = lambda *args, **kwargs: request.getfixturevalue(
         set_metrics
