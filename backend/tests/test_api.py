@@ -10,16 +10,6 @@ from moto import mock_aws
 
 
 @pytest.fixture
-def aws_credentials(scope="session", autouse=True):
-    """Mocked AWS Credentials for moto."""
-    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
-    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-    os.environ["AWS_SECURITY_TOKEN"] = "testing"
-    os.environ["AWS_SESSION_TOKEN"] = "testing"
-    os.environ["LOG_LEVEL"] = "TRACE"
-
-
-@pytest.fixture
 @mock_aws
 def client(scope="session") -> TestClient:
     from predictive_capacity.api import app

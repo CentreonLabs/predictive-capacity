@@ -50,6 +50,16 @@ pytest-mock = "^3.10.0"
 [tool.isort]
 profile = "black"
 
+[tool.pytest.ini_options]
+env = [
+    "AWS_ACCESS_KEY_ID=testing",
+    "AWS_SECRET_ACCESS_KEY=testing",
+    "AWS_SECURITY_TOKEN=testing",
+    "AWS_SESSION_TOKEN=testing",
+    "LOG_LEVEL=TRACE",
+    "AWS_DEFAULT_REGION=us-east-1",
+]
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
