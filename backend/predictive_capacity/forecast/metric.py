@@ -225,7 +225,7 @@ class Metric:
         self.saturation_6_months = float(self.forecast_values.iloc[(24 * 31 * 6)])
         self.saturation_12_months = float(self.forecast_values.iloc[-1])
 
-        logger.info(f"forecast made with version: {__version__()}")
+        logger.info(f"forecast made with version: {__version__}")
 
         return self
 

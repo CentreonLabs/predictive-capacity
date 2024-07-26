@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import os
 import sys
 
 import botocore.exceptions
@@ -37,8 +38,8 @@ from predictive_capacity.utils import JSONEcoder
 from predictive_capacity.warp10.find_set_metrics import find_set_metrics
 
 logger.remove()
-logger.add(sys.stderr, level="DEBUG")
-app = FastAPI(version=__version__())
+logger.add(sys.stderr, level=os.environ.get("LOG_LEVEL", "INFO").upper())
+app = FastAPI(version=__version__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,7 +72,6 @@ def read_dashboard(
     if query["Count"] == 0:
         raise HTTPException(status_code=404, detail="No dashboard found")
     dashboard = []
-    assert isinstance(query, dict)
     for item in query["Items"]:
         item = json.loads(json.dumps(item, cls=JSONEcoder))
         index = item["source#host_id#service_id"]
