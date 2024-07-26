@@ -21,7 +21,7 @@ import numpy as np
 import optuna
 import pandas as pd
 from aeon.performance_metrics.forecasting import (
-    mean_absolute_scaled_errorn as error_metric,
+    mean_absolute_scaled_error as error_metric,
 )
 from lightgbm import LGBMRegressor
 from loguru import logger

@@ -39,7 +39,7 @@ from predictive_capacity.warp10.find_set_metrics import find_set_metrics
 
 logger.remove()
 logger.add(sys.stderr, level=os.environ.get("LOG_LEVEL", "INFO").upper())
-app = FastAPI(version=__version__())
+app = FastAPI(version=__version__)
 
 app.add_middleware(
     CORSMiddleware,

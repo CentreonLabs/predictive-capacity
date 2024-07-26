@@ -40,11 +40,9 @@ dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 s3: S3ServiceResource = boto3.resource("s3")
 
 
-def __version__() -> str:
-    with open("pyproject.toml") as f:
-        text = f.readlines()
-    return (
-        [x for x in text if x.startswith("version")][0]
+with open("pyproject.toml") as f:
+    __version__ = (
+        [x for x in f.readlines() if x.startswith("version")][0]
         .split("=")[1]
         .replace('"', "")
         .strip()
