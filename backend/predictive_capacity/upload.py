@@ -52,7 +52,6 @@ def create_dynamodb_table(
     """  # noqa E501
     logger.info(f"Creating table {table_name}...")
     try:
-
         dynamodb.create_table(
             TableName=table_name,
             KeySchema=[

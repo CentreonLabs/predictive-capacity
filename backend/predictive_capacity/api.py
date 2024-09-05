@@ -59,7 +59,6 @@ def perform_healthcheck():
 def read_dashboard(
     response: Response, organization: str = "test"
 ) -> list[schemas.Dashboard]:
-
     logger.debug(f"Organization: {organization}")
 
     table = dynamodb.Table(ML_RESULTS_TABLE)
@@ -75,13 +74,14 @@ def read_dashboard(
     for item in query["Items"]:
         item = json.loads(json.dumps(item, cls=JSONEcoder))
         index = item["source#host_id#service_id"]
+        assert isinstance(index, str)
         item["host_id"] = index.split("#")[1]
         item["service_id"] = index.split("#")[2]
         item["metric_name"] = item["class"]
         del item["source#host_id#service_id"]
         del item["class"]
-        dashboard.append(item)
-    logger.trace(f"Dashboard: {json.dumps(dashboard, indent=2)}")
+        dashboard.append(schemas.Dashboard.parse_obj(item))
+    logger.trace(f"Dashboard: {dashboard}")
     return dashboard
 
 

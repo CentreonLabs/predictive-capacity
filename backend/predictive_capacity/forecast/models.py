@@ -20,17 +20,20 @@ from typing import Tuple
 import numpy as np
 import optuna
 import pandas as pd
-from aeon.performance_metrics.forecasting import (
+from aeon.performance_metrics.forecasting import (  # type: ignore
     mean_absolute_scaled_error as error_metric,
 )
 from lightgbm import LGBMRegressor
 from loguru import logger
-from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor
-from sklearn.linear_model import HuberRegressor, Ridge
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import PolynomialFeatures
+from sklearn.base import BaseEstimator, RegressorMixin  # type: ignore
+from sklearn.ensemble import (  # type: ignore
+    GradientBoostingRegressor,
+    HistGradientBoostingRegressor,
+)
+from sklearn.linear_model import HuberRegressor, Ridge  # type: ignore
+from sklearn.model_selection import TimeSeriesSplit  # type: ignore
+from sklearn.pipeline import make_pipeline  # type: ignore
+from sklearn.preprocessing import PolynomialFeatures  # type: ignore
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -44,149 +47,144 @@ class MutliGBMTunedDetrended(BaseEstimator, RegressorMixin):
         self.timeout = timeout
         self.n_splits = n_splits
 
-    def fit(self, X, y):
-        def objective(trial: optuna.Trial) -> float:
-            tscv = TimeSeriesSplit(n_splits=self.n_splits, test_size=int(0.1 * len(X)))
+    def objective(self, trial: optuna.Trial) -> float:
+        X = self.X
+        y = self.y
+        tscv = TimeSeriesSplit(n_splits=self.n_splits, test_size=int(0.1 * len(X)))
 
-            gbm_type = trial.suggest_categorical("gbm_type", ["lgbm", "gbr", "hgbr"])
+        gbm_type = trial.suggest_categorical("gbm_type", ["lgbm", "gbr", "hgbr"])
 
-            if gbm_type == "lgbm":
-                param = {
-                    "objective": trial.suggest_categorical(
-                        "objective",
-                        ["quantile"],
-                    ),
-                    "alpha": trial.suggest_float("alpha", 0.01, 0.99),
-                    "learning_rate": trial.suggest_float("learning_rate", 0.0001, 1),
-                    "n_estimators": trial.suggest_int("n_estimators", 50, 3000),
-                    "reg_alpha": trial.suggest_float("reg_alpha", 0.0, 10.0),
-                    "reg_lambda": trial.suggest_float("reg_lambda", 0.0, 100.0),
-                    "random_state": seed,
-                    "verbose": -1,
-                }
+        if gbm_type == "lgbm":
+            gbm = LGBMRegressor(
+                objective=trial.suggest_categorical("objective", ["quantile"]),
+                alpha=trial.suggest_float("alpha", 0.01, 0.99),
+                learning_rate=trial.suggest_float("learning_rate", 0.0001, 1),
+                n_estimators=trial.suggest_int("n_estimators", 50, 3000),
+                reg_alpha=trial.suggest_float("reg_alpha", 0.0, 10.0),
+                reg_lambda=trial.suggest_float("reg_lambda", 0.0, 100.0),
+                random_state=seed,
+                verbose=-1,
+            )
 
-                gbm = LGBMRegressor(**param)
+        elif gbm_type == "gbr":
+            param = {
+                "loss": trial.suggest_categorical("loss", ["quantile"]),
+                "learning_rate": trial.suggest_float("learning_rate", 0.001, 0.5),
+                "n_estimators": trial.suggest_int("n_estimators", 50, 1000),
+                "alpha": trial.suggest_float("alpha", 0.01, 0.99),
+                "random_state": seed,
+            }
 
-            elif gbm_type == "gbr":
-                param = {
-                    "loss": trial.suggest_categorical("loss", ["quantile"]),
-                    "learning_rate": trial.suggest_float("learning_rate", 0.001, 0.5),
-                    "n_estimators": trial.suggest_int("n_estimators", 50, 1000),
-                    "alpha": trial.suggest_float("alpha", 0.01, 0.99),
-                    "random_state": seed,
-                }
+            gbm = GradientBoostingRegressor(**param)
 
-                gbm = GradientBoostingRegressor(**param)
+        else:
+            param = {
+                "learning_rate": trial.suggest_float("learning_rate", 0.001, 0.5),
+                "max_iter": trial.suggest_int("max_iter", 50, 1000),
+                "quantile": trial.suggest_float("quantile", 0.01, 0.99),
+                "loss": trial.suggest_categorical("loss", ["quantile"]),
+                "random_state": seed,
+            }
 
+            gbm = HistGradientBoostingRegressor(**param)
+
+        degree = trial.suggest_int("poly_degree", 0, 1)
+
+        if degree > 0:
+            trend_model = trial.suggest_categorical(
+                "trend_model",
+                [
+                    # "ridge",
+                    "huber"
+                ],
+            )
+
+            if trend_model == "ridge":
+                trend_forecaster = make_pipeline(
+                    PolynomialFeatures(degree),
+                    Ridge(alpha=trial.suggest_float("ridge_alpha", 0.0001, 1000.0)),
+                )
             else:
-                param = {
-                    "learning_rate": trial.suggest_float("learning_rate", 0.001, 0.5),
-                    "max_iter": trial.suggest_int("max_iter", 50, 1000),
-                    "quantile": trial.suggest_float("quantile", 0.01, 0.99),
-                    "loss": trial.suggest_categorical("loss", ["quantile"]),
-                    "random_state": seed,
-                }
-
-                gbm = HistGradientBoostingRegressor(**param)
-
-            degree = trial.suggest_int("poly_degree", 0, 1)
-
-            if degree > 0:
-                trend_model = trial.suggest_categorical(
-                    "trend_model",
-                    [
-                        # "ridge",
-                        "huber"
-                    ],
+                trend_forecaster = make_pipeline(
+                    PolynomialFeatures(degree),
+                    HuberRegressor(epsilon=trial.suggest_float("huber_eps", 1, 1000.0)),
                 )
 
-                if trend_model == "ridge":
-                    trend_forecaster = make_pipeline(
-                        PolynomialFeatures(degree),
-                        Ridge(alpha=trial.suggest_float("ridge_alpha", 0.0001, 1000.0)),
-                    )
-                else:
-                    trend_forecaster = make_pipeline(
-                        PolynomialFeatures(degree),
-                        HuberRegressor(
-                            epsilon=trial.suggest_float("huber_eps", 1, 1000.0)
-                        ),
-                    )
+            damped = trial.suggest_float("damped", -1.0, 1.0, step=0.01)
 
-                damped = trial.suggest_float("damped", -1.0, 1.0, step=0.01)
+            mae_scores = []
+            for k, (train_index, valid_index) in enumerate(tscv.split(X)):
+                train_x, valid_x = X[train_index], X[valid_index]
+                train_y, valid_y = y[train_index], y[valid_index]
 
-                mae_scores = []
-                for k, (train_index, valid_index) in enumerate(tscv.split(X)):
-                    train_x, valid_x = X[train_index], X[valid_index]
-                    train_y, valid_y = y[train_index], y[valid_index]
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    trend_forecaster.fit(train_x[:, 0].reshape(-1, 1), train_y)
 
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
-                        trend_forecaster.fit(train_x[:, 0].reshape(-1, 1), train_y)
+                gbm.fit(
+                    train_x,
+                    train_y
+                    - damped
+                    * np.array(trend_forecaster.predict(train_x[:, 0].reshape(-1, 1))),
+                )
 
-                    gbm.fit(
-                        train_x,
-                        train_y
-                        - damped
-                        * np.array(
-                            trend_forecaster.predict(train_x[:, 0].reshape(-1, 1))
-                        ),
-                    )
+                preds = np.array(gbm.predict(valid_x))
+                mae = error_metric(
+                    valid_y,
+                    preds
+                    + damped
+                    * np.array(trend_forecaster.predict(valid_x[:, 0].reshape(-1, 1))),
+                    y_train=train_y,
+                )
+                mae_scores.append(mae)
 
-                    preds = np.array(gbm.predict(valid_x))
-                    mae = error_metric(
-                        valid_y,
-                        preds
-                        + damped
-                        * np.array(
-                            trend_forecaster.predict(valid_x[:, 0].reshape(-1, 1))
-                        ),
-                        y_train=train_y,
-                    )
-                    mae_scores.append(mae)
+                trial.report(float(np.mean(mae_scores)), k)
+                if trial.should_prune():
+                    raise optuna.TrialPruned()
 
-                    trial.report(float(np.mean(mae_scores)), k)
-                    if trial.should_prune():
-                        raise optuna.TrialPruned()
+            mean_mae: float = float(np.mean(mae_scores))
 
-                mean_mae: float = float(np.mean(mae_scores))
+            trial.set_user_attr("std_mae", np.std(mae_scores))
 
-                trial.set_user_attr("std_mae", np.std(mae_scores))
+            return mean_mae
+        else:
+            mae_scores = []
+            for k, (train_index, valid_index) in enumerate(tscv.split(X)):
+                train_x, valid_x = X[train_index], X[valid_index]
+                train_y, valid_y = y[train_index], y[valid_index]
 
-                return mean_mae
-            else:
-                mae_scores = []
-                for k, (train_index, valid_index) in enumerate(tscv.split(X)):
-                    train_x, valid_x = X[train_index], X[valid_index]
-                    train_y, valid_y = y[train_index], y[valid_index]
+                gbm.fit(train_x, train_y)
+                preds = gbm.predict(valid_x)
 
-                    gbm.fit(train_x, train_y)
-                    preds = gbm.predict(valid_x)
+                mae = error_metric(
+                    valid_y,
+                    preds,
+                    y_train=train_y,
+                )
+                mae_scores.append(mae)
 
-                    mae = error_metric(
-                        valid_y,
-                        preds,
-                        y_train=train_y,
-                    )
-                    mae_scores.append(mae)
+                trial.report(float(np.mean(mae_scores)), k)
+                if trial.should_prune():
+                    raise optuna.TrialPruned()
 
-                    trial.report(float(np.mean(mae_scores)), k)
-                    if trial.should_prune():
-                        raise optuna.TrialPruned()
+            mean_mae = float(np.mean(mae_scores))
 
-                mean_mae = float(np.mean(mae_scores))
+            trial.set_user_attr("std_mae", np.std(mae_scores))
 
-                trial.set_user_attr("std_mae", np.std(mae_scores))
+            return mean_mae
 
-                return mean_mae
-
+    def fit(self, X, y):
+        self.X = X
+        self.y = y
         self.study = optuna.create_study(
             direction="minimize",
             study_name="forecast_dream",
             sampler=optuna.samplers.TPESampler(seed=seed),
             pruner=optuna.pruners.SuccessiveHalvingPruner(),
         )
-        self.study.optimize(objective, n_trials=self.n_trials, timeout=self.timeout)
+        self.study.optimize(
+            self.objective, n_trials=self.n_trials, timeout=self.timeout
+        )
 
         self.best_params = self.study.best_params
 

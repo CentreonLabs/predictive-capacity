@@ -1,5 +1,4 @@
 import json
-import os
 
 import boto3
 import pytest
@@ -34,42 +33,40 @@ def test_create_s3_bucket():
 
 @pytest.fixture
 def metric_dict():
-    return dict(
-        metric_name="metric_name",
-        days_to_full=1000,
-        host_id="host_id",
-        service_id="service_id",
-        host_name="host_name",
-        service_name="service_name",
-        current_saturation=0.5,
-        saturation_3_months=dict(current_saturation=0.5, forecast=0.7),
-        saturation_6_months=dict(current_saturation=0.5, forecast=0.8),
-        saturation_12_months=dict(current_saturation=0.5, forecast=0.9),
-        uuid="uuid",
-        confidence_level=50,
-        data_scaled=[0.0, 0.1, 0.2],
-        data_dates=[
+    return {
+        "metric_name": "metric_name",
+        "days_to_full": 1000,
+        "host_id": "host_id",
+        "service_id": "service_id",
+        "host_name": "host_name",
+        "service_name": "service_name",
+        "current_saturation": 0.5,
+        "saturation_3_months": {"current_saturation": 0.5, "forecast": 0.7},
+        "saturation_6_months": {"current_saturation": 0.5, "forecast": 0.8},
+        "saturation_12_months": {"current_saturation": 0.5, "forecast": 0.9},
+        "uuid": "uuid",
+        "confidence_level": 50,
+        "data_scaled": [0.0, 0.1, 0.2],
+        "data_dates": [
             "2021-01-01 00:00:00",
             "2021-01-01 01:00:00",
             "2021-01-01 02:00:00",
         ],
-        forecast=[0.3, 0.4, 0.5],
-        forecast_dates=[
+        "forecast": [0.3, 0.4, 0.5],
+        "forecast_dates": [
             "2021-01-02 00:00:00",
             "2021-01-02 01:00:00",
             "2021-01-02 02:00:00",
         ],
-    )
+    }
 
 
 @mock_aws
 def test_upload_prediction_metadata(metric_dict):
     from predictive_capacity.schemas import MetricBase
-    from predictive_capacity.upload import (
-        ML_RESULTS_TABLE,
-        create_dynamodb_table,
-        upload_prediction_metadata,
-    )
+    from predictive_capacity.upload import (ML_RESULTS_TABLE,
+                                            create_dynamodb_table,
+                                            upload_prediction_metadata)
 
     dynamodb = boto3.resource("dynamodb")
     create_dynamodb_table()
@@ -115,12 +112,9 @@ def test_upload_prediction(metric_dict):
 @mock_aws
 def test_upload_all(metric_dict):
     from predictive_capacity.schemas import MetricBase
-    from predictive_capacity.upload import (
-        ML_RESULTS_BUCKET,
-        ML_RESULTS_TABLE,
-        create_dynamodb_table,
-        upload_all,
-    )
+    from predictive_capacity.upload import (ML_RESULTS_BUCKET,
+                                            ML_RESULTS_TABLE,
+                                            create_dynamodb_table, upload_all)
 
     # Given
     dynamodb = boto3.resource("dynamodb")

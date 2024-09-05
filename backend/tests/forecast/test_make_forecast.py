@@ -69,8 +69,8 @@ def test_make_forecast(
     data,
 ):
     from predictive_capacity.forecast.forecast import (
-        make_forecasts,
         ResponseFindSetMetrics,
+        make_forecasts,
     )
 
     mock_fetch_metric.return_value = data

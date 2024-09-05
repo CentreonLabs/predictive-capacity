@@ -15,12 +15,13 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
 from loguru import logger
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler  # type: ignore
 
 from predictive_capacity import (
     HORIZON_PREDICTION_HOURS,
@@ -39,8 +40,6 @@ class MetricCommon:
         index=pd.DatetimeIndex([]), columns=["0"], dtype="float64"
     )
     features: list[str]
-    remove_features: Callable[[Optional[list[str]]], MetricCommon]
-    scale: Callable[[Optional[MinMaxScaler]], MetricCommon]
     interpolate: Callable[[], MetricCommon]
 
     def preprocess(
@@ -71,6 +70,14 @@ class MetricCommon:
         self.data["dayofweek"] = self.data.index.dayofweek
         self.data["weekend"] = self.data["dayofweek"].isin([5, 6]).astype(int)
         return self
+
+    @abstractmethod
+    def remove_features(self, features: list[str]):
+        pass
+
+    @abstractmethod
+    def scale(self, scaler: MinMaxScaler):
+        pass
 
 
 class MetricTraining(MetricCommon):
@@ -147,7 +154,6 @@ class MetricForecasting(MetricCommon):
 
 
 class Metric:
-    training_metric: MetricCommon = MetricCommon()
     current_saturation: Optional[float] = None
     days_until_full: Optional[float] = None
     forecast_values: pd.Series = pd.Series(index=pd.DatetimeIndex([]), dtype="float64")
@@ -173,6 +179,7 @@ class Metric:
         self.token = token
         self.host_name, self.service_name = get_label_name(token, metric, self.labels)
         self.confidence_level = 0
+        self.training_metric = MetricTraining(token, metric, self.labels)
 
     def forecast(
         self,
@@ -180,7 +187,6 @@ class Metric:
         timeout: int = ML_TRAINING_TIMEOUT,
     ):
         # Properties based on metric values
-        self.training_metric = MetricTraining(self.token, self.metric, self.labels)
         self.current_saturation = self.training_metric.current_saturation
         assert isinstance(self.training_metric.data.index, pd.DatetimeIndex)
         self.last_timestamp = self.training_metric.data.index[-1]

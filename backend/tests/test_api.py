@@ -1,6 +1,5 @@
 import json
 from decimal import Decimal
-import os
 from unittest.mock import patch
 
 import boto3
