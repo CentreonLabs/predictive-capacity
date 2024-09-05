@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   dynamodb:
     image: amazon/dynamodb-local:${DDB_VERSION:-latest}
@@ -48,7 +46,6 @@ services:
       - predictive_capacity_network
     ports:
       - 80:80
-      # - 443:443
       - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
