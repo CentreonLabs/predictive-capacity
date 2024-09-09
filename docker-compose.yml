@@ -72,6 +72,7 @@ services:
       ML_RESULTS_BUCKET: ${ML_RESULTS_BUCKET:-eu-west-1-ml-predictive-capacity-results}
       AWS_ACCESS_KEY_ID : minio
       AWS_SECRET_ACCESS_KEY : ${MINIO_ROOT_PASSWORD:-monpassword}
+      AWS_DEFAULT_REGION: us-east-1
       ML_WARP10_URL: http://warp10
       DYNAMODB_URL: http://dynamodb:8000
       MINIO_URL: http://minio:9000 
