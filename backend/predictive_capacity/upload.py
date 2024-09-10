@@ -15,8 +15,6 @@
 
 import json
 from decimal import Decimal
-from typing import Optional
-from uuid import uuid4
 
 from loguru import logger
 from mypy_boto3_dynamodb.service_resource import Table
@@ -54,7 +52,6 @@ def create_dynamodb_table(
     """  # noqa E501
     logger.info(f"Creating table {table_name}...")
     try:
-
         dynamodb.create_table(
             TableName=table_name,
             KeySchema=[

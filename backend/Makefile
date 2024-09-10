@@ -2,19 +2,15 @@ IMAGE_NAME = 333885346763.dkr.ecr.eu-west-1.amazonaws.com/internal-centreon-saas
 CONTAINER_NAME = centreon-saas-forecast-api-ml-aiops
 VERSION=$(shell poetry version -s)
 
-.PHONY: format build run deploy update coverage
+.PHONY: build run deploy update coverage
 
-all: update format test
+all: update test
 
 update:
 	poetry update
 	poetry lock
 
-format: 
-	isort .
-	black .
-
-test: format 
+test: 
 	poetry run coverage run -m pytest
 	rm assets/coverage.svg || true
 	poetry run coverage-badge -o assets/coverage.svg
@@ -37,4 +33,3 @@ deploy: update test build
 	docker push $(IMAGE_NAME):latest
 	ssh -i ~/.ssh/id_rsa_centreon droussel@10.32.3.146 "sudo /srv/upgrade.sh && sudo docker image prune -f" 
 	ssh -i ~/.ssh/id_rsa_centreon droussel@10.32.5.123 "sudo /srv/upgrade.sh && sudo docker image prune -f"
-

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   dynamodb:
     image: amazon/dynamodb-local:${DDB_VERSION:-latest}
@@ -48,7 +46,6 @@ services:
       - predictive_capacity_network
     ports:
       - 80:80
-      # - 443:443
       - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -75,6 +72,7 @@ services:
       ML_RESULTS_BUCKET: ${ML_RESULTS_BUCKET:-eu-west-1-ml-predictive-capacity-results}
       AWS_ACCESS_KEY_ID : minio
       AWS_SECRET_ACCESS_KEY : ${MINIO_ROOT_PASSWORD:-monpassword}
+      AWS_DEFAULT_REGION: us-east-1
       ML_WARP10_URL: http://warp10
       DYNAMODB_URL: http://dynamodb:8000
       MINIO_URL: http://minio:9000 

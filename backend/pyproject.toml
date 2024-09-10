@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "forecast_api"
-version = "0.6.0"
+name = "predictive_capacity"
+version = "0.6.1"
 description = "API to retrieve and make forecasts for predictive capacity service"
 authors = [
     "Sami Mourched <smourched@centreon.com>",
@@ -8,7 +8,7 @@ authors = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.13"
 fastapi = "^0.92.0"
 pywarp10 = { git = "https://github.com/centreon/pywarp10.git" }
 numpy = "^1.24.2"
@@ -27,16 +27,10 @@ mypy = "^1.4.1"
 mypy-boto3 = "^1.28.11"
 mypy-boto3-dynamodb = "^1.28.11"
 mypy-boto3-s3 = "^1.28.12"
-aeon = "^0.4.0"
+aeon = "^0.10.0"
 lightgbm = "^4.0.0"
 datetime = "^5.2"
 optuna = "^3.3.0"
-scikit-learn-intelex = "^2023.2.1"
-
-[tool.poetry.dev-dependencies]
-pytest = "^7.2.1"
-pytest-env = "^0.8.1"
-pytest-mock = "^3.10.0"
 
 [tool.poetry.group.dev.dependencies]
 python-dotenv = "^1.0.0"
@@ -44,14 +38,23 @@ matplotlib = "^3.7.1"
 ipykernel = "^6.22.0"
 coverage = "^7.2.3"
 coverage-badge = "^1.1.0"
-moto = "^4.1.14"
-black = "^24.3.0"
-isort = "^5.12.0"
-flake8-cognitive-complexity = "^0.1.0"
-flake8 = "^6.1.0"
+moto = "^5.0.11"
+pytest = "^7.2.1"
+pytest-env = "^0.8.1"
+pytest-mock = "^3.10.0"
+boto3-stubs = "^1.35.12"
+types-tqdm = "^4.66.0.20240417"
+pandas-stubs = "^2.2.2.240807"
 
-[tool.isort]
-profile = "black"
+[tool.pytest.ini_options]
+env = [
+    "AWS_ACCESS_KEY_ID=testing",
+    "AWS_SECRET_ACCESS_KEY=testing",
+    "AWS_SECURITY_TOKEN=testing",
+    "AWS_SESSION_TOKEN=testing",
+    "LOG_LEVEL=TRACE",
+    "AWS_DEFAULT_REGION=us-east-1",
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
