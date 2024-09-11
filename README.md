@@ -78,8 +78,7 @@ Please read [METRICS.md](METRICS.md) for the setup steps.
 
 
 ```bash
-docker compose build
-docker compose up
+docker compose --pull up
 ```
 
 go to `http://localhost/metrics` to see the web app

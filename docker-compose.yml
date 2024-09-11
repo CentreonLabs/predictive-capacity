@@ -21,7 +21,7 @@ services:
       - predictive_capacity_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 120s
+      interval: 60s
       timeout: 10s
       retries: 10
 
@@ -53,8 +53,7 @@ services:
 
 
   backend:
-    image: backend-ml-aiops
-    build: ./backend
+    image: centreonlabs/predictive-capacity-backend:latest
     networks:
       - predictive_capacity_network
     labels:
@@ -78,7 +77,7 @@ services:
       MINIO_URL: http://minio:9000 
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:7000/healthcheck || exit 1"]
-      interval: 120s
+      interval: 60s
       timeout: 10s
       retries: 10
     depends_on:
@@ -86,11 +85,8 @@ services:
         condition: service_healthy
       
   frontend:
-    image: frontend-ml-aiops
-    build:
-      context: ./frontend
-      args:
-        API_URL: http://${API_DOMAIN:-localhost}${API_PREFIX:-/api}
+    image: centreonlabs/predictive-capacity-frontend:latest
+   
     networks:
       - predictive_capacity_network
     environment:
