@@ -78,7 +78,7 @@ Please read [METRICS.md](METRICS.md) for the setup steps.
 
 
 ```bash
-docker compose build
+docker compose pull
 docker compose up
 ```
 
