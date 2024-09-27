@@ -39,7 +39,7 @@
     "@visx/voronoi": "^3.3.0",
     "@vitejs/plugin-react": "^4.0.0",
     "antd": "^5.0.5",
-    "axios": "^0.28.0",
+    "axios": "^1.7.4",
     "d3-array": "^3.2.0",
     "d3-time-format": "^4.1.0",
     "eslint": "^8.38.0",
