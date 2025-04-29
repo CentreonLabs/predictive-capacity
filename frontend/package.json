@@ -37,7 +37,7 @@
     "@visx/shape": "^3.5.0",
     "@visx/tooltip": "^3.3.0",
     "@visx/voronoi": "^3.3.0",
-    "@vitejs/plugin-react": "^4.0.0",
+    "@vitejs/plugin-react": "^4.4.1",
     "antd": "^5.0.5",
     "axios": "^1.7.4",
     "d3-array": "^3.2.0",
@@ -49,7 +49,7 @@
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.8.1",
     "typescript": "^4.7.4",
-    "vite": "^4.5.9"
+    "vite": "^6.3.3"
   },
   "scripts": {
     "dev": "refine dev",
