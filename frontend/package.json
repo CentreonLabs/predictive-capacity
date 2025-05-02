@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "serve": "^14.1.1"
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@ant-design/icons": "^5.0.1",
     "@radix-ui/react-icons": "^1.3.0",
-    "@refinedev/antd": "^5.38.1",
+    "@refinedev/antd": "^5.46.1",
     "@refinedev/cli": "^2.16.30",
     "@refinedev/core": "^4.49.2",
     "@refinedev/devtools": "^1.2.0",
@@ -39,7 +39,7 @@
     "@visx/voronoi": "^3.3.0",
     "@vitejs/plugin-react": "^4.4.1",
     "antd": "^5.0.5",
-    "axios": "^1.7.4",
+    "axios": "^1.9.0",
     "d3-array": "^3.2.0",
     "d3-time-format": "^4.1.0",
     "eslint": "^8.38.0",
@@ -49,7 +49,7 @@
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.8.1",
     "typescript": "^4.7.4",
-    "vite": "^6.3.3"
+    "vite": "^6.3.4"
   },
   "scripts": {
     "dev": "refine dev",
