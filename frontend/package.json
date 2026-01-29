@@ -35,6 +35,7 @@
     "@visx/responsive": "^3.10.2",
     "@visx/scale": "^3.5.0",
     "@visx/shape": "^3.5.0",
+    "@visx/text": "^3.12.0",
     "@visx/tooltip": "^3.3.0",
     "@visx/voronoi": "^3.3.0",
     "@vitejs/plugin-react": "^4.4.1",
