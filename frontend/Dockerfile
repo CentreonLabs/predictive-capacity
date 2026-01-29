@@ -20,6 +20,6 @@ RUN chown -R node:node /app
 USER node
 
 RUN cd /app
-RUN pnpm install && pnpm run build
+RUN pnpm install --frozen-lockfile && pnpm run build
 
 CMD [ "pnpm", "run", "serve" ]
